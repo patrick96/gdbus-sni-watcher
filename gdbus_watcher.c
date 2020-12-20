@@ -167,27 +167,33 @@ static void host_vanished_handler(GDBusConnection *c, const gchar *name, gpointe
 static void handle_method_call(GDBusConnection *c, const gchar *sender, const gchar *obj_path,
 		const gchar *int_name, const gchar *method_name, GVariant *param, GDBusMethodInvocation *invoc,
 		gpointer user_data) {
-	gboolean proxy = FALSE;
 	const gchar *tmp, *service;
 	g_variant_get(param, "(&s)", &tmp);
 
 	printf("%s called method '%s', args '%s'\n", sender, method_name, tmp);
+    printf("obj_path: '%s', int_name: '%s'\n", obj_path, int_name);
 	if(g_strcmp0(method_name, "RegisterStatusNotifierItem") == 0) {
+        /*
+         * Different implementations send different arguments
+         *
+         * The spec says the argument is the bus name, but libappindicator 
+         * sends the path to the object with the StatusNotifierItem interface.
+         */
+
 		//libappindicator sends object path, so we should use sender name and object path
-		if(tmp[0] == '/')
-			service = g_strconcat(sender, tmp, NULL);
-		//xembedsniproxy sends item name, so we should use the item from the argument
-		else if(tmp[0] == ':') {
-			service = g_strconcat(tmp, "/StatusNotifierItem", NULL);
-			proxy = TRUE;
-		}
-		else
-			service = g_strconcat(sender, "/StatusNotifierItem", NULL);
+		if(tmp[0] == '/') {
+            service = g_strdup(sender);
+        }
+		else {
+            service = tmp;
+        }
+
+        printf("service=%s, tmp=%s, sender=%s\n", service, tmp, sender);
 
 		g_dbus_method_invocation_return_value(invoc, NULL);
 		g_dbus_connection_emit_signal(c, NULL, watcher_path, watcher_name,
 				"StatusNotifierItemRegistered", g_variant_new("(s)", service),  NULL);
-		g_bus_watch_name(G_BUS_TYPE_SESSION, proxy ? tmp : sender,
+		g_bus_watch_name(G_BUS_TYPE_SESSION, service,
 			G_BUS_NAME_OWNER_FLAGS_NONE, item_appeared_handler, item_vanished_handler, (gpointer) service, NULL);
 	}
 	else if(g_strcmp0(method_name, "RegisterStatusNotifierHost") == 0) {

@@ -1,7 +1,7 @@
 PREFIX ?= /usr
 BINPREFIX ?= $(PREFIX)/bin
 gd-watcher: gdbus_watcher.c
-	$(CC) -o $@ $^ -Wall -pedantic `pkg-config --cflags --libs gio-2.0`
+	$(CC) -g -o $@ $^ -Wall -pedantic `pkg-config --cflags --libs gio-2.0`
 
 clean:
 	rm gd-watcher

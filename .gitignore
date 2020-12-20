@@ -36,3 +36,5 @@
 *.sw*
 
 gd-watcher
+
+compile_commands.json
